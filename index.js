@@ -3,6 +3,7 @@ import { openDatabase } from "./db/connection.js";
 import { runMigrations } from "./db/migrate.js";
 import { seedDatabase } from "./db/seed.js";
 import { seedRpgContent } from "./db/seed-rpg.js";
+import { seedWorldContent } from "./db/seed-world.js";
 import { getOrCreateUser } from "./db/repo/users.js";
 import { registerPassiveXp } from "./lib/passive-xp.js";
 
@@ -15,6 +16,7 @@ const db = openDatabase();       // buka/bikin data/rpg.db
 runMigrations(db);               // jalankan db/migrations/*.sql yang belum tercatat
 seedDatabase(db);                // isi data master (jobs, items) kalau belum ada
 seedRpgContent(db);              // isi data master RPG (class, skill, monster)
+seedWorldContent(db);            // isi dunia (biome, resource, gemstone, monster) — porting Orion
 bot.db = db;                     // diakses semua plugin lewat parameter `bot`
 
 // Middleware global: pastikan SETIAP pengirim command sudah punya baris user

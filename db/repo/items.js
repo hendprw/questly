@@ -4,14 +4,42 @@
  * Katalog item (master data) + operasi inventory user.
  */
 
-export function getItemByCode(db, code) {
-  return db.prepare(`SELECT * FROM items WHERE code = ?`).get(code);
+function parseItemRow(row) {
+  if (!row) return row;
+  return {
+    ...row,
+    locations: row.locations ? JSON.parse(row.locations) : [],
+    crafting: row.crafting ? JSON.parse(row.crafting) : null,
+    metadata: row.metadata ? JSON.parse(row.metadata) : {},
+  };
 }
 
-export function listShopItems(db) {
+export function getItemByCode(db, code) {
+  return parseItemRow(db.prepare(`SELECT * FROM items WHERE code = ?`).get(code));
+}
+
+/** Item yang bisa dibeli langsung di !shop buy (buy_price terisi). */
+export function listShopItems(db, category = null) {
+  const rows = category
+    ? db.prepare(`SELECT * FROM items WHERE buy_price IS NOT NULL AND category = ? ORDER BY buy_price ASC`).all(category)
+    : db.prepare(`SELECT * FROM items WHERE buy_price IS NOT NULL ORDER BY category, buy_price ASC`).all();
+  return rows.map(parseItemRow);
+}
+
+/** Semua item yang bisa dijual (dipakai untuk validasi + info harga jual). */
+export function listSellableItems(db) {
   return db
-    .prepare(`SELECT * FROM items WHERE buy_price IS NOT NULL ORDER BY buy_price ASC`)
-    .all();
+    .prepare(`SELECT * FROM items WHERE tradeable = 1 AND sell_price > 0 ORDER BY category, sell_price ASC`)
+    .all()
+    .map(parseItemRow);
+}
+
+/** Resource yang bisa didapat lewat !gather di biome tertentu (nama biome, mis. 'Veridian Labyrinth'). */
+export function listGatherableByBiome(db, biomeName) {
+  return db
+    .prepare(`SELECT * FROM items WHERE locations LIKE ? ORDER BY rarity, sell_price`)
+    .all(`%${biomeName}%`)
+    .map(parseItemRow);
 }
 
 export function getInventory(db, userId) {
