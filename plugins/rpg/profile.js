@@ -42,7 +42,7 @@ export default function (bot) {
         `✦ ${name}`,
         `🗡️  Class   : ${className}`,
         `🏅 Rank    : ${leveling.rank}`,
-        `🏆 Level   : ${leveling.level}  (Prestige ${leveling.prestige})`,
+        `🏆 Level   : ${leveling.level}`,
         `✨ EXP     : ${leveling.xp}/${need}`,
         `   ${progressBar(leveling.xp, need)}`,
         "",
