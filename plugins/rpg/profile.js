@@ -1,6 +1,16 @@
 import { getFullProfile } from "../../db/repo/users.js";
 import { xpToNextLevel } from "../../db/repo/leveling.js";
+import { getClass } from "../../db/repo/classes.js";
+import { sendClassPicker } from "./class.js";
 import { money, progressBar } from "../../lib/format.js";
+
+const STAT_LABELS = {
+  strength: "STR",
+  intelligence: "INT",
+  luck: "LUK",
+  stamina: "STA",
+  charisma: "CHA",
+};
 
 export default function (bot) {
   bot.command(
@@ -9,24 +19,49 @@ export default function (bot) {
       const profile = getFullProfile(bot.db, ctx.dbUser.id);
       const { user, wallet, leveling, character, job, stats } = profile;
 
+      // Belum pilih class — jangan tampilkan kartu kosong/aneh, ajak pilih dulu.
+      if (!character.class) {
+        return sendClassPicker(
+          ctx,
+          bot.db,
+          "📋 Kamu belum memilih class! Pilih dulu biar kartu petualangmu aktif:"
+        );
+      }
+
       const name = user.display_name || user.push_name || ctx.senderNumber;
       const need = xpToNextLevel(leveling.level);
+      const className = getClass(bot.db, character.class)?.name ?? character.class;
       const statLine = Object.entries(stats)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(" · ");
+        .map(([k, v]) => `${STAT_LABELS[k] ?? k.toUpperCase()} ${v}`)
+        .join("  ·  ");
 
-      await ctx.reply(
-        `👤 *Profil ${name}*\n\n` +
-          `🏅 Level ${leveling.level} (Prestige ${leveling.prestige})\n` +
-          `✨ XP: ${leveling.xp}/${need} ${progressBar(leveling.xp, need)}\n` +
-          `💼 Pekerjaan: ${job?.job_name ?? "Pengangguran"}\n\n` +
-          `💵 Cash: ${money(wallet.cash)}\n` +
-          `🏦 Bank: ${money(wallet.bank)}/${money(wallet.bank_capacity)}\n` +
-          `💎 Gems: ${wallet.gems}\n\n` +
-          `❤️ HP: ${character.hp}/${character.max_hp}   🔷 MP: ${character.mp}/${character.max_mp}\n` +
-          `⚡ Energy: ${character.energy}/${character.max_energy}\n\n` +
-          `📊 Stats: ${statLine}`
-      );
+      const card = [
+        "╔═══════════════════════════╗",
+        "     👤  KARTU PETUALANG",
+        "╚═══════════════════════════╝",
+        `✦ ${name}`,
+        `🗡️  Class   : ${className}`,
+        `🏅 Rank    : ${leveling.rank}`,
+        `🏆 Level   : ${leveling.level}  (Prestige ${leveling.prestige})`,
+        `✨ EXP     : ${leveling.xp}/${need}`,
+        `   ${progressBar(leveling.xp, need)}`,
+        "",
+        "⚔️  STATUS TEMPUR",
+        `❤️  HP      : ${character.hp}/${character.max_hp}`,
+        `🔷 MP      : ${character.mp}/${character.max_mp}`,
+        `⚡ Energy  : ${character.energy}/${character.max_energy}`,
+        `⚔️ ATK ${character.attack}   🛡️ DEF ${character.defense}   💨 SPD ${character.speed}`,
+        "",
+        "💰 KEKAYAAN",
+        `✧ Cash    : ${money(wallet.cash)}`,
+        `🏦 Bank    : ${money(wallet.bank)} / ${money(wallet.bank_capacity)}`,
+        `💎 Gems    : ${wallet.gems}`,
+        "",
+        `💼 Pekerjaan : ${job?.job_name ?? "Pengangguran"}`,
+        `📊 Stats     : ${statLine}`,
+      ].join("\n");
+
+      await ctx.reply("```" + card + "```");
     },
     {
       aliases: ["p", "me"],
