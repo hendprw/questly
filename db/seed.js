@@ -14,14 +14,14 @@ const JOBS = [
 ];
 
 const ITEMS = [
-  { code: "wood_sword", name: "Pedang Kayu", category: "weapon", rarity: "common", equip_slot: "weapon", buy_price: 200, sell_price: 80, stackable: 0 },
-  { code: "iron_sword", name: "Pedang Besi", category: "weapon", rarity: "uncommon", equip_slot: "weapon", buy_price: 800, sell_price: 320, stackable: 0 },
-  { code: "leather_armor", name: "Baju Kulit", category: "armor", rarity: "common", equip_slot: "body", buy_price: 300, sell_price: 120, stackable: 0 },
-  { code: "health_potion", name: "Ramuan Kesehatan", category: "consumable", rarity: "common", buy_price: 50, sell_price: 20, stackable: 1, max_stack: 99 },
-  { code: "mana_potion", name: "Ramuan Mana", category: "consumable", rarity: "common", buy_price: 60, sell_price: 25, stackable: 1, max_stack: 99 },
-  { code: "fishing_rod", name: "Pancingan", category: "tool", rarity: "common", buy_price: 250, sell_price: 100, stackable: 0 },
-  { code: "iron_ore", name: "Bijih Besi", category: "material", rarity: "common", buy_price: null, sell_price: 40, stackable: 1, max_stack: 999 },
-  { code: "gold_ore", name: "Bijih Emas", category: "material", rarity: "rare", buy_price: null, sell_price: 250, stackable: 1, max_stack: 999 },
+  { code: "wood_sword", name: "Pedang Kayu", category: "weapon", rarity: "common", equip_slot: "weapon", buy_price: 200, sell_price: 80, stackable: 0, weight: 5 },
+  { code: "iron_sword", name: "Pedang Besi", category: "weapon", rarity: "uncommon", equip_slot: "weapon", buy_price: 800, sell_price: 320, stackable: 0, weight: 7 },
+  { code: "leather_armor", name: "Baju Kulit", category: "armor", rarity: "common", equip_slot: "body", buy_price: 300, sell_price: 120, stackable: 0, weight: 6 },
+  { code: "health_potion", name: "Ramuan Kesehatan", category: "consumable", rarity: "common", buy_price: 50, sell_price: 20, stackable: 1, max_stack: 99, weight: 1 },
+  { code: "mana_potion", name: "Ramuan Mana", category: "consumable", rarity: "common", buy_price: 60, sell_price: 25, stackable: 1, max_stack: 99, weight: 1 },
+  { code: "fishing_rod", name: "Pancingan", category: "tool", rarity: "common", buy_price: 250, sell_price: 100, stackable: 0, weight: 4 },
+  { code: "iron_ore", name: "Bijih Besi", category: "material", rarity: "common", buy_price: null, sell_price: 40, stackable: 1, max_stack: 999, weight: 2 },
+  { code: "gold_ore", name: "Bijih Emas", category: "material", rarity: "rare", buy_price: null, sell_price: 250, stackable: 1, max_stack: 999, weight: 2 },
 ];
 
 const CURRENCIES = [
@@ -37,8 +37,8 @@ export function seedDatabase(db) {
     VALUES (@code, @name, @min_level, @base_pay_min, @base_pay_max, @base_xp, @cooldown_seconds)
   `);
   const insertItem = db.prepare(`
-    INSERT OR IGNORE INTO items (code, name, category, rarity, equip_slot, buy_price, sell_price, stackable, max_stack)
-    VALUES (@code, @name, @category, @rarity, @equip_slot, @buy_price, @sell_price, @stackable, @max_stack)
+    INSERT OR IGNORE INTO items (code, name, category, rarity, equip_slot, buy_price, sell_price, stackable, max_stack, weight)
+    VALUES (@code, @name, @category, @rarity, @equip_slot, @buy_price, @sell_price, @stackable, @max_stack, @weight)
   `);
   const insertCurrency = db.prepare(`
     INSERT OR IGNORE INTO currencies (code, name, symbol, is_active) VALUES (@code, @name, @symbol, @is_active)
@@ -50,6 +50,7 @@ export function seedDatabase(db) {
       insertItem.run({
         equip_slot: null,
         max_stack: 99,
+        weight: 1,
         ...item,
       });
     }
