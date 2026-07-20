@@ -1,0 +1,57 @@
+--- ANALISIS KELEMAHAN SISTEM QUESTLY ---
+
+1. SISTEM PERTANIAN & GATHERING:
+- Biji Bunga Matahari (sunflower_seed): Hanya bisa dibeli di toko? Tidak ada di alam liar.
+- Biji Teratai Api (fire_lotus_seed): Hanya bisa dibeli di toko? Tidak ada di alam liar.
+
+2. ITEM SAMPAH (Tidak Punya Kegunaan Crafting/Upgrade/Usable):
+- Pisang (banana)
+- Telinga Goblin (goblin_ear)
+- Beri Liar (wild_berries)
+- Kelopak Bulan (moonpetal)
+- Getah Treant (treant_sap)
+- Kecubung (amethyst)
+- Ruby (ruby)
+- Bijih Mythril (mythril_ore)
+- Bulu Kasar (feathers)
+- Bijih Tembaga (copper_ore)
+- Bunga Gunung (mountain_flower)
+- Bulu Harpy (harpy_feather)
+- Obsidian (obsidian)
+- Telur Wyvern (wyvern_egg)
+- Safir (sapphire)
+- Cakar Griffin (griffin_claw)
+- Alang-alang Rawa (reeds)
+- Ikan Biasa (common_fish)
+- Gas Rawa Botolan (swamp_gas_vial)
+- Belut Ular (serpent_eel)
+- Darah Lintah (leech_blood)
+- Paha Katak Raksasa (giant_frog_leg)
+- Esensi Will-o-Wisp (will_o_wisp)
+- Sisik Hydra (hydra_scale)
+- Teratai Hitam (black_lotus)
+- Gula (sugar)
+- Debu Mana (mana_dust)
+- Mutiara Abyss (abyssal_pearl)
+- Rumput Laut Dalam (deep_sea_kelp)
+- Cabang Terumbu (coral_branch)
+- Sisik Abyssal (abyssal_scale)
+- Kristal Beku (frost_crystal)
+- Melon Es (ice_melon)
+- Bulu Yeti (yeti_fur)
+- Pecahan Glasial (glacial_shard)
+- Batu Lahar (lava_rock)
+- Bunga Api (fire_blossom)
+- Pecahan Obsidian (obsidian_shard)
+- Kayu Abu (ash_wood)
+- Telur Bebek (duck_egg)
+- Bulu Halus Kelinci (rabbit_fur)
+- Sisik Kadal Tahan Api (lizard_scale)
+- Minyak Anjing Laut (seal_oil)
+- Biji Bunga Matahari (sunflower_seed)
+- Lumut Lembab (cave_moss)
+
+3. KESEIMBANGAN EKONOMI (Stamina vs Harga Jual):
+- Rata-rata Jual Material Tambang (!mine 15 Stamina): 0 Aester
+- Rata-rata Jual Hasil Buruan (!hunt 12 Stamina): 1288.2 Aester
+- Rata-rata Jual Hasil Pancing (!fish 10 Stamina): 0 Aester

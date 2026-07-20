@@ -1,0 +1,8 @@
+DUMP DATA MEMBER GRUP
+Nama Grup: Jdhd
+ID: 120363409174077925@g.us
+Jumlah Member: 2
+
+DAFTAR ANGGOTA:
+1. JID: 244916970103013@lid | Role: member
+2. JID: 43216162299960@lid | Role: superadmin

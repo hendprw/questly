@@ -24,29 +24,54 @@ export function getWallet(db, userId) {
 }
 
 export function addCash(db, userId, amount, { type = "adjust", note = null, relatedUserId = null } = {}) {
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Jumlah harus berupa angka valid dan lebih dari 0.");
   const apply = db.transaction(() => {
-    db.prepare(`UPDATE wallets SET cash = cash + ?, updated_at = strftime('%s','now') WHERE user_id = ?`)
-      .run(amount, userId);
+    const walletBefore = getWallet(db, userId);
+    let toAdd = amount;
+    // Limit dompet 200,000
+    if (walletBefore.cash + toAdd > 200000) {
+        toAdd = Math.max(0, 200000 - walletBefore.cash);
+    }
+    
+    if (toAdd > 0) {
+        db.prepare(`UPDATE wallets SET cash = cash + ?, updated_at = strftime('%s','now') WHERE user_id = ?`)
+          .run(toAdd, userId);
+    }
     const wallet = getWallet(db, userId);
     if (wallet.cash < 0) throw new InsufficientFundsError();
-    logTx(db, { userId, type, amount, balanceAfter: wallet.cash, note, relatedUserId });
+    logTx(db, { userId, type, amount: toAdd, balanceAfter: wallet.cash, note, relatedUserId });
     return wallet;
   });
   return apply();
 }
 
-export function removeCash(db, userId, amount, opts = {}) {
-  const wallet = getWallet(db, userId);
-  if (wallet.cash < amount) throw new InsufficientFundsError();
-  return addCash(db, userId, -amount, opts);
+export function removeCash(db, userId, amount, { type = "adjust", note = null, relatedUserId = null } = {}) {
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Jumlah harus berupa angka valid dan lebih dari 0.");
+  const apply = db.transaction(() => {
+    const walletBefore = getWallet(db, userId);
+    if (walletBefore.cash < amount) throw new InsufficientFundsError();
+    db.prepare(`UPDATE wallets SET cash = cash - ?, updated_at = strftime('%s','now') WHERE user_id = ?`)
+      .run(amount, userId);
+    const wallet = getWallet(db, userId);
+    logTx(db, { userId, type, amount: -amount, balanceAfter: wallet.cash, note, relatedUserId });
+    return wallet;
+  });
+  return apply();
 }
 
 export function deposit(db, userId, amount) {
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Jumlah harus berupa angka valid dan lebih dari 0.");
   const apply = db.transaction(() => {
     const wallet = getWallet(db, userId);
     if (wallet.cash < amount) throw new InsufficientFundsError();
-    if (wallet.bank + amount > wallet.bank_capacity) {
-      throw new Error("Melebihi kapasitas bank");
+    
+    // Cek level untuk kapasitas bank
+    const char = db.prepare("SELECT level FROM characters WHERE user_id = ?").get(userId);
+    const level = char ? char.level : 1;
+    const maxBankCapacity = 70000 + (Math.min(Math.floor(level / 10), 5) * 50000);
+
+    if (wallet.bank + amount > maxBankCapacity) {
+      throw new Error(`Melebihi kapasitas bank (Maks: ${maxBankCapacity.toLocaleString()})`);
     }
     db.prepare(
       `UPDATE wallets SET cash = cash - ?, bank = bank + ?, updated_at = strftime('%s','now') WHERE user_id = ?`
@@ -60,6 +85,7 @@ export function deposit(db, userId, amount) {
 }
 
 export function withdraw(db, userId, amount) {
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Jumlah harus berupa angka valid dan lebih dari 0.");
   const apply = db.transaction(() => {
     const wallet = getWallet(db, userId);
     if (wallet.bank < amount) throw new InsufficientFundsError("Saldo bank tidak cukup");
@@ -75,6 +101,7 @@ export function withdraw(db, userId, amount) {
 }
 
 export function transfer(db, fromUserId, toUserId, amount) {
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Jumlah harus berupa angka valid dan lebih dari 0.");
   const apply = db.transaction(() => {
     const sender = getWallet(db, fromUserId);
     if (sender.cash < amount) throw new InsufficientFundsError();
@@ -140,4 +167,22 @@ export function robPlayer(db, robberId, targetId) {
       return { success: false, fine: fineAmount };
     }
   })();
+}
+
+/** Menambah Adventurer Tokens */
+export function addTokens(db, userId, amount, meta = {}) {
+  const apply = db.transaction(() => {
+    db.prepare(`UPDATE wallets SET tokens = tokens + ?, updated_at = strftime('%s','now') WHERE user_id = ?`).run(amount, userId);
+  });
+  apply();
+}
+
+/** Mengurangi Adventurer Tokens */
+export function removeTokens(db, userId, amount, meta = {}) {
+  const apply = db.transaction(() => {
+    const row = db.prepare(`SELECT tokens FROM wallets WHERE user_id = ?`).get(userId);
+    if (!row || row.tokens < amount) throw new InsufficientFundsError('Tokens tidak cukup');
+    db.prepare(`UPDATE wallets SET tokens = tokens - ?, updated_at = strftime('%s','now') WHERE user_id = ?`).run(amount, userId);
+  });
+  apply();
 }

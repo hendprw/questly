@@ -6,6 +6,8 @@ import {
   decrementStock,
   getCarryState,
   addCarryWeight,
+  getDynamicSellPrice,
+  recordItemSale,
 } from "../../db/repo/shop.js";
 import { formatDuration } from "../../db/repo/cooldowns.js";
 import { money, progressBar } from "../../lib/format.js";
@@ -121,7 +123,8 @@ export default function (bot) {
           return ctx.reply("❌ Kamu tidak punya item itu sejumlah itu.");
         }
 
-        const totalPrice = owned.sell_price * qty;
+        const dynamicPrice = getDynamicSellPrice(db, code, owned.sell_price);
+        const totalPrice = dynamicPrice * qty;
         const item = getItemByCode(db, code);
         const totalWeight = (item?.weight ?? 0) * qty;
 
@@ -129,10 +132,12 @@ export default function (bot) {
           removeItem(db, ctx.dbUser.id, code, qty);
           addCash(db, ctx.dbUser.id, totalPrice, { type: "shop_sell", note: `${qty}x ${code}` });
           addCarryWeight(db, ctx.dbUser.id, -totalWeight);
+          recordItemSale(db, code, qty);
 
           const newCarry = getCarryState(db, ctx.dbUser.id);
           await ctx.reply(
             `✅ *Jual ${qty}x ${owned.name}*\n` +
+              `📉 _(Harga dinamis: ${dynamicPrice} Aester/ea)_\n` +
               `💰 ${money(totalPrice)} • ⚖️ ${newCarry.carry_weight}/${newCarry.max_carry_weight} ${progressBar(newCarry.carry_weight, newCarry.max_carry_weight, 10)}`
           );
         } catch (e) {

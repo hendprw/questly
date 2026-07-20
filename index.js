@@ -6,6 +6,7 @@ import { seedRpgContent } from "./db/seed-rpg.js";
 import { seedWorldContent } from "./db/seed-world.js";
 import { getOrCreateUser } from "./db/repo/users.js";
 import { registerPassiveXp } from "./lib/passive-xp.js";
+import { registerModeration } from "./lib/moderation.js";
 
 const bot = new Bot();
 // config.bt di folder ini dibaca otomatis.
@@ -24,6 +25,8 @@ bot.db = db;                     // diakses semua plugin lewat parameter `bot`
 // jadi command per-file di plugins/ tidak perlu urus "user baru" masing-masing.
 bot.use((ctx) => {
   ctx.dbUser = getOrCreateUser(db, ctx);
+
+
 });
 
 // XP pasif dari chat biasa (bukan cuma command RPG) — porting dari Orion.
@@ -31,6 +34,9 @@ bot.use((ctx) => {
 // SETIAP pesan masuk (beda dari bot.use(), yang cuma jalan kalau pesannya
 // memang sebuah command).
 registerPassiveXp(bot, db);
+
+// Register Moderation Automod & Welcome
+registerModeration(bot, db);
 
 process.on("SIGINT", () => {
   db.close();

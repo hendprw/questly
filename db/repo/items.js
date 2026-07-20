@@ -46,9 +46,9 @@ export function getInventory(db, userId) {
   return db
     .prepare(
       `SELECT inv.id AS inventory_id, inv.quantity, inv.is_equipped, inv.durability,
-              it.code, it.name, it.category, it.rarity, it.equip_slot, it.sell_price
+              it.code, it.name, it.category, it.rarity, it.equip_slot, it.sell_price, it.weight
          FROM inventory inv JOIN items it ON it.id = inv.item_id
-        WHERE inv.user_id = ?
+        WHERE inv.user_id = ? AND inv.location = 'bag'
         ORDER BY it.category, it.name`
     )
     .all(userId);
@@ -57,9 +57,9 @@ export function getInventory(db, userId) {
 export function getInventoryItem(db, userId, itemCode) {
   return db
     .prepare(
-      `SELECT inv.*, it.code, it.name, it.stackable, it.max_stack, it.sell_price
+      `SELECT inv.*, it.code, it.name, it.stackable, it.max_stack, it.sell_price, it.weight
          FROM inventory inv JOIN items it ON it.id = inv.item_id
-        WHERE inv.user_id = ? AND it.code = ?`
+        WHERE inv.user_id = ? AND it.code = ? AND inv.location = 'bag'`
     )
     .get(userId, itemCode);
 }
@@ -76,7 +76,7 @@ export function addItem(db, userId, itemCode, quantity = 1) {
   const apply = db.transaction(() => {
     if (item.stackable) {
       const existing = db
-        .prepare(`SELECT * FROM inventory WHERE user_id = ? AND item_id = ? LIMIT 1`)
+        .prepare(`SELECT * FROM inventory WHERE user_id = ? AND item_id = ? AND location = 'bag' LIMIT 1`)
         .get(userId, item.id);
 
       if (existing) {
@@ -86,9 +86,10 @@ export function addItem(db, userId, itemCode, quantity = 1) {
       }
     }
 
+    const durability = (item.category === 'weapon' || item.category === 'armor') ? 100 : null;
     db.prepare(
-      `INSERT INTO inventory (user_id, item_id, quantity) VALUES (?, ?, ?)`
-    ).run(userId, item.id, quantity);
+      `INSERT INTO inventory (user_id, item_id, quantity, durability, location) VALUES (?, ?, ?, ?, 'bag')`
+    ).run(userId, item.id, quantity, durability);
   });
 
   apply();
@@ -118,4 +119,28 @@ export function removeItem(db, userId, itemCode, quantity = 1) {
 export function hasItem(db, userId, itemCode, quantity = 1) {
   const row = getInventoryItem(db, userId, itemCode);
   return !!row && row.quantity >= quantity;
+}
+
+/** Mengurangi durability equipment yang sedang dipakai sebanyak 1. */
+export function degradeEquippedItems(db, userId) {
+  const apply = db.transaction(() => {
+    db.prepare(`UPDATE inventory SET durability = durability - 1 WHERE user_id = ? AND is_equipped = 1 AND durability IS NOT NULL AND durability > 0`).run(userId);
+    
+    const broken = db.prepare(`
+      SELECT inv.id, it.name, eq.slot 
+      FROM inventory inv 
+      JOIN items it ON inv.item_id = it.id 
+      JOIN equipment eq ON eq.inventory_id = inv.id 
+      WHERE inv.user_id = ? AND inv.is_equipped = 1 AND inv.durability <= 0
+    `).all(userId);
+    
+    if (broken.length > 0) {
+      db.prepare(`UPDATE inventory SET is_equipped = 0, durability = 0 WHERE user_id = ? AND is_equipped = 1 AND durability <= 0`).run(userId);
+      for (const b of broken) {
+        db.prepare(`DELETE FROM equipment WHERE user_id = ? AND slot = ?`).run(userId, b.slot);
+      }
+    }
+    return broken;
+  });
+  return apply();
 }

@@ -93,20 +93,13 @@ export function getFullProfile(db, userId) {
   const stats = db
     .prepare(`SELECT stat_key, value FROM user_stats WHERE user_id = ?`)
     .all(userId);
-  const job = db
-    .prepare(
-      `SELECT uj.job_level, uj.job_xp, j.name AS job_name
-         FROM user_jobs uj JOIN jobs j ON j.id = uj.job_id
-        WHERE uj.user_id = ?`
-    )
-    .get(userId);
+
 
   return {
     user,
     wallet,
     leveling,
     character,
-    job: job ?? null,
     stats: Object.fromEntries(stats.map((s) => [s.stat_key, s.value])),
   };
 }

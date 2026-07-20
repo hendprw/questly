@@ -109,7 +109,22 @@ export function createListing(db, sellerId, itemCode, amountInput, priceInput, n
     if (!pricePerUnit || pricePerUnit <= 0) throw new Error("Harga tidak valid.");
 
     const totalPrice = amount * pricePerUnit;
-    const tax = Math.ceil(totalPrice * (LISTING_TAX_PERCENTAGE / 100));
+    
+    let taxPercentage = LISTING_TAX_PERCENTAGE;
+    const char = db.prepare("SELECT ch.is_hero, c.passive_trait FROM characters ch JOIN classes c ON ch.class = c.code WHERE ch.user_id = ?").get(sellerId);
+    
+    if (char && char.is_hero === 1) {
+        taxPercentage = 0; // Pahlawan bebas pajak!
+    } else if (char && char.passive_trait) {
+        try {
+            const trait = JSON.parse(char.passive_trait);
+            if (trait.skill === 'discount') {
+                taxPercentage = LISTING_TAX_PERCENTAGE * (1 - trait.bonus); // Diskon 10% dari nominal pajak
+            }
+        } catch(e) {}
+    }
+
+    const tax = Math.ceil(totalPrice * (taxPercentage / 100));
 
     // PERBAIKAN DARI ORION: pajak di sana dipotong langsung dari field
     // `player.solari` tanpa tercatat di ledger manapun. Di sini pajak

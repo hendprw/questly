@@ -3,11 +3,11 @@
 # ──────────────────────────────────────────────
 
 [bot]
-prefix       = "!"
+prefix       = "."
 session_path = "./session"
 log_level    = "error"
 print_qr     = true
-# owners = ["628XXXXXXXXXX@s.whatsapp.net"]
+owners = ["6283139682650@s.whatsapp.net", "43216162299960@lid"]
 
 [reconnect]
 base_delay = 1000

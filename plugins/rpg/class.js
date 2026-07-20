@@ -22,7 +22,16 @@ export async function sendClassPicker(ctx, db, note = "⚔️ *Pilih class kamu 
   if (classes.length <= 3) {
     await ctx.sendButtons(
       {
-        title: `${note}\n\n${classes.map((c) => `• *${c.name}* — ${c.description}`).join("\n")}`,
+        title: `${note}\n\n${classes.map((c) => {
+          let desc = c.description;
+          if (c.base_bonus) {
+            try {
+              const bonus = JSON.parse(c.base_bonus);
+              if (bonus.passive_trait) desc += `\n🌟 Pasif: ${bonus.passive_trait.desc}`;
+            } catch(e) {}
+          }
+          return `• *${c.name}*\n  _${desc}_`;
+        }).join("\n\n")}`,
         footer: "Cuma bisa dipilih sekali, pilih yang mantap 💪",
       },
       classes.map((c) => ({ type: "reply", text: c.name, id: `${prefix}class ${c.code}` }))
@@ -35,11 +44,20 @@ export async function sendClassPicker(ctx, db, note = "⚔️ *Pilih class kamu 
     [
       {
         title: "Class RPG",
-        rows: classes.map((c) => ({
-          title: c.name,
-          id: `${prefix}class ${c.code}`,
-          description: c.description,
-        })),
+        rows: classes.map((c) => {
+          let desc = c.description;
+          if (c.base_bonus) {
+            try {
+              const bonus = JSON.parse(c.base_bonus);
+              if (bonus.passive_trait) desc += ` | 🌟 Pasif: ${bonus.passive_trait.desc}`;
+            } catch(e) {}
+          }
+          return {
+            title: c.name,
+            id: `${prefix}class ${c.code}`,
+            description: desc,
+          };
+        }),
       },
     ]
   );

@@ -12,7 +12,7 @@
 
 // Rarity yang boleh muncul di toko rotasi — meniru NON_RARE_RARITIES Orion
 // (yang mengecualikan rarity paling langka dari rotasi toko mekanik).
-const ROTATABLE_RARITIES = ["common", "uncommon", "rare"];
+const ROTATABLE_RARITIES = ["common", "uncommon"];
 
 // Setara STOCK_MULTIPLIERS di Orion: makin langka rarity-nya, makin
 // sedikit stok yang di-generate per restock.
@@ -154,13 +154,57 @@ export function decrementStock(db, listingId, amount) {
 // ── Kapasitas bawa barang (setara currentWeight/maxInventoryWeight Player Orion) ──
 
 export function getCarryState(db, userId) {
-  return db
-    .prepare(`SELECT carry_weight, max_carry_weight FROM characters WHERE user_id = ?`)
-    .get(userId);
+  const weightRows = db.prepare(`
+    SELECT SUM(inv.quantity * COALESCE(it.weight, 0)) as total_weight
+    FROM inventory inv
+    JOIN items it ON it.id = inv.item_id
+    WHERE inv.user_id = ? AND inv.location = 'bag'
+  `).get(userId);
+  
+  const current_weight = weightRows?.total_weight || 0;
+
+  let max_carry_weight = 70; // Kapasitas dasar
+  const equippedBag = db.prepare(`
+      SELECT items.metadata FROM equipment 
+      JOIN inventory ON equipment.inventory_id = inventory.id 
+      JOIN items ON inventory.item_id = items.id 
+      WHERE equipment.user_id = ? AND equipment.slot = 'bag'
+  `).get(userId);
+
+  if (equippedBag && equippedBag.metadata) {
+      try {
+          const meta = JSON.parse(equippedBag.metadata);
+          if (meta.capacity_bonus) {
+              max_carry_weight += meta.capacity_bonus;
+          }
+      } catch(e) {}
+  }
+  
+  return { carry_weight: current_weight, max_carry_weight };
 }
 
 export function addCarryWeight(db, userId, delta) {
-  db.prepare(
-    `UPDATE characters SET carry_weight = MAX(0, carry_weight + ?) WHERE user_id = ?`
-  ).run(delta, userId);
+  const apply = db.transaction(() => {
+    db.prepare(`UPDATE characters SET carry_weight = carry_weight + ? WHERE user_id = ?`).run(
+      delta,
+      userId
+    );
+  });
+  apply();
+}
+
+/** Hitung harga jual berdasarkan supply & demand server */
+export function getDynamicSellPrice(db, itemCode, baseSellPrice) {
+    const record = db.prepare(`SELECT sold_count FROM shop_supply WHERE item_code = ?`).get(itemCode);
+    const sold = record ? record.sold_count : 0;
+    return Math.max(1, Math.floor(baseSellPrice * (500 / (500 + sold))));
+}
+
+/** Catat penjualan item ke server untuk menjatuhkan harganya */
+export function recordItemSale(db, itemCode, quantity) {
+    db.prepare(`
+        INSERT INTO shop_supply (item_code, sold_count) 
+        VALUES (?, ?) 
+        ON CONFLICT(item_code) DO UPDATE SET sold_count = sold_count + excluded.sold_count, last_updated = strftime('%s','now')
+    `).run(itemCode, quantity);
 }
